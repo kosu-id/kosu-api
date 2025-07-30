@@ -1,0 +1,98 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table users {
+  id String [pk]
+  email String [unique, not null]
+  username String [unique]
+  phoneNumber String [unique, note: 'Using country code as prefix without the \'+\' sign, e.g., \'628xxxx\'']
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  address String [not null]
+  password String [not null]
+  role UserRole [not null, default: 'User']
+  Kost kosts [not null]
+  Tenant tenants [not null]
+  Payment payments [not null]
+}
+
+Table kosts {
+  id String [pk]
+  ownerId String [not null]
+  slug String [unique, not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  name String [not null]
+  address String [not null]
+  description String
+  rooms rooms [not null]
+  owner users [not null]
+}
+
+Table rooms {
+  id String [pk]
+  kostId String [not null]
+  slug String [unique, not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  number String [not null]
+  floor Int
+  tenant tenants
+  kost kosts [not null]
+}
+
+Table tenants {
+  id String [pk]
+  userId String [not null]
+  roomId String [unique, not null]
+  startDate DateTime [not null]
+  endDate DateTime
+  bills bills [not null]
+  user users [not null]
+  room rooms [not null]
+}
+
+Table bills {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  tenantId String [not null]
+  title String [not null]
+  amount Float [not null]
+  dueDate DateTime [not null]
+  isPaid Boolean [not null, default: false]
+  tenant tenants [not null]
+  payment payments
+}
+
+Table payments {
+  id String [pk]
+  billId String [unique, not null]
+  userId String [not null]
+  method String [not null, note: 'payment method, e.g., \'bank_transfer\', \'cash\', \'qris\', etc.']
+  amount Float [not null]
+  paidAt DateTime [default: `now()`, not null]
+  bill bills [not null]
+  user users [not null]
+}
+
+Enum UserRole {
+  Owner
+  User
+  Admin
+}
+
+Ref: kosts.ownerId > users.id
+
+Ref: rooms.kostId > kosts.id
+
+Ref: tenants.userId > users.id
+
+Ref: tenants.roomId - rooms.id
+
+Ref: bills.tenantId > tenants.id
+
+Ref: payments.billId - bills.id
+
+Ref: payments.userId > users.id

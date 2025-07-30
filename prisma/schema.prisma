@@ -1,0 +1,193 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+generator dbml {
+  provider  = "prisma-dbml-generator"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String  @id @default(uuid(7))
+  email       String  @unique
+  username    String? @unique
+  /// Using country code as prefix without the '+' sign, e.g., '628xxxx'
+  phoneNumber String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  password String
+  role     UserRole @default(User)
+  
+
+  kost        Kost[]
+  tenant      Tenant[]
+  payment     Payment[]
+  userProfile UserProfile?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id     String @id @default(uuid(7))
+  userId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  firstName String
+  lastName  String?
+  address   String
+  city      String
+  /// state or province, e.g., 'California', 'Jakarta'
+  state     String
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_profiles") // This maps the model to the 'user_profiles' table in the database
+}
+
+model Kost {
+  id      String @id @default(cuid())
+  ownerId String
+  slug    String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String
+  address     String
+  description String?
+
+  // Relations
+  rooms Room[]
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@map("kosts") // This maps the model to the 'kosts' table in the database
+}
+
+model Room {
+  id     String @id @default(cuid())
+  kostId String
+  slug   String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Room name, e.g., 'Room A', 'Room B', etc.
+  number String
+  floor  Int    @default(1)
+
+  // Relations
+  tenant Tenant?
+
+  kost Kost @relation(fields: [kostId], references: [id])
+
+  @@map("rooms")
+}
+
+model Tenant {
+  id     String @id @default(cuid())
+  userId String
+  roomId String @unique
+
+  startDate DateTime
+  endDate   DateTime?
+
+  // Relations
+  bills Bill[]
+
+  user User @relation(fields: [userId], references: [id])
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@map("tenants") // This maps the model to the 'tenants' table in the database
+}
+
+model Bill {
+  id String @id @default(cuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantId String
+  title    String
+  amount   Float
+  dueDate  DateTime
+  isPaid   Boolean  @default(false)
+
+  // Relations
+  payment      Payment?
+  bill_penalty BillPenalty[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("bills") // This maps the model to the 'bills' table in the database
+}
+
+model BillPenalty {
+  id        String @id @default(cuid())
+  billId    String
+  penaltyId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  bill    Bill    @relation(fields: [billId], references: [id])
+  penalty Penalty @relation(fields: [penaltyId], references: [id])
+
+  @@map("bill_penalties")
+}
+
+model Penalty {
+  id String @id @default(cuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  amount Float
+  reason String
+
+  bill_penalties BillPenalty[]
+
+  @@map("penalties")
+}
+
+model Payment {
+  id     String @id @default(cuid())
+  billId String @unique
+  userId String
+
+  /// payment method, e.g., 'bank_transfer', 'cash', 'qris', etc.
+  method String
+  amount Float
+  paidAt DateTime @default(now())
+
+  // Relations
+  bill Bill @relation(fields: [billId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+enum UserRole {
+  Owner
+  User
+  Admin
+}
