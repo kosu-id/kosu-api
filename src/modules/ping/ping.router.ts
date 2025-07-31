@@ -1,7 +1,7 @@
 import { Router } from "express";
 import expressAsyncHandler from "express-async-handler";
 
-import type { RouterHandler } from "@local/common/types/router-contract";
+import type { RouterHandler } from "@local/common/types/router-handler";
 
 import PingController from "./ping.controller";
 import { validateBody } from "@local/common/middlewares/validator";
