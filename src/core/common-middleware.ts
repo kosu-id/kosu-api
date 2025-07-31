@@ -5,11 +5,16 @@ import express from "express";
 import helmet from "helmet";
 
 import logger from "@local/common/middlewares/logger";
+import { APP_CONFIG } from "@local/common/constants";
 
 export default class CommonMiddleware {
   static bind(app: Application) {
     // Add common middleware here, e.g., body parser, CORS, etc.
-    app.use(cors());
+    app.use(cors({
+      origin: [APP_CONFIG.FRONTEND_URL], 
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      credentials: true,
+    }));
     app.use(helmet());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));

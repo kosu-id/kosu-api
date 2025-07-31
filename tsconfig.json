@@ -10,6 +10,7 @@
 
     "paths": {
       "@local/*": ["./src/*"],
+      "@local/prisma/*": ["./prisma/*"]
     },
 
     // Bundler mode

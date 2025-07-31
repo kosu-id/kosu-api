@@ -9,12 +9,68 @@ Table users {
   phoneNumber String [unique, note: 'Using country code as prefix without the \'+\' sign, e.g., \'628xxxx\'']
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  address String [not null]
+  name String [not null]
+  emailVerified Boolean [not null]
+  image String
   password String [not null]
   role UserRole [not null, default: 'User']
-  Kost kosts [not null]
-  Tenant tenants [not null]
-  Payment payments [not null]
+  userProfile user_profiles
+  kost kosts [not null]
+  tenant tenants [not null]
+  payment payments [not null]
+  sessions sessions [not null]
+  accounts accounts [not null]
+}
+
+Table verifications {
+  id String [pk]
+  identifier String [not null]
+  value String [not null]
+  createdAt DateTime
+  updatedAt DateTime
+  expiresAt DateTime [not null]
+}
+
+Table accounts {
+  id String [pk]
+  accountId String [not null]
+  providerId String [not null]
+  userId String [not null]
+  createdAt DateTime [not null]
+  updatedAt DateTime [not null]
+  accessToken String
+  refreshToken String
+  idToken String
+  scope String
+  password String
+  accessTokenExpiresAt DateTime
+  refreshTokenExpiresAt DateTime
+  user users [not null]
+}
+
+Table sessions {
+  id String [pk]
+  token String [unique, not null]
+  userId String [not null]
+  createdAt DateTime [not null]
+  updatedAt DateTime [not null]
+  expiresAt DateTime [not null]
+  ipAddress String
+  userAgent String
+  user users [not null]
+}
+
+Table user_profiles {
+  id String [pk]
+  userId String [unique, not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  firstName String [not null]
+  lastName String
+  address String [not null]
+  city String [not null]
+  state String [not null, note: 'state or province, e.g., \'California\', \'Jakarta\'']
+  user users [not null]
 }
 
 Table kosts {
@@ -36,8 +92,8 @@ Table rooms {
   slug String [unique, not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  number String [not null]
-  floor Int
+  number String [not null, note: 'Room name, e.g., \'Room A\', \'Room B\', etc.']
+  floor Int [not null, default: 1]
   tenant tenants
   kost kosts [not null]
 }
@@ -62,8 +118,28 @@ Table bills {
   amount Float [not null]
   dueDate DateTime [not null]
   isPaid Boolean [not null, default: false]
-  tenant tenants [not null]
   payment payments
+  bill_penalty bill_penalties [not null]
+  tenant tenants [not null]
+}
+
+Table bill_penalties {
+  id String [pk]
+  billId String [not null]
+  penaltyId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  bill bills [not null]
+  penalty penalties [not null]
+}
+
+Table penalties {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  amount Float [not null]
+  reason String [not null]
+  bill_penalties bill_penalties [not null]
 }
 
 Table payments {
@@ -83,6 +159,12 @@ Enum UserRole {
   Admin
 }
 
+Ref: accounts.userId > users.id [delete: Cascade]
+
+Ref: sessions.userId > users.id [delete: Cascade]
+
+Ref: user_profiles.userId - users.id
+
 Ref: kosts.ownerId > users.id
 
 Ref: rooms.kostId > kosts.id
@@ -92,6 +174,10 @@ Ref: tenants.userId > users.id
 Ref: tenants.roomId - rooms.id
 
 Ref: bills.tenantId > tenants.id
+
+Ref: bill_penalties.billId > bills.id
+
+Ref: bill_penalties.penaltyId > penalties.id
 
 Ref: payments.billId - bills.id
 
